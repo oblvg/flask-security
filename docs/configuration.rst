@@ -48,6 +48,16 @@ Core
 ``SECURITY_PASSWORD_SCHEMES``                    List of support password hash algorithms.
                                                  ``SECURITY_PASSWORD_HASH`` must be from this list.
                                                  Passwords encrypted with any of these schemes will be honored.
+``SECURITY_PASSWORD_LENGTH_MIN``                 Minimum required length for passwords. Defaults to 8.
+``SECURITY_PASSWORD_COMPLEXITY_CHECKER``         Set to complexity checker to use (Only ``zxcvbn`` supported).
+                                                 Defaults to ``None``
+``SECURITY_PASSWORD_CHECK_BREACHED``             If not ``None`` new/changed passwords will be checked against the
+                                                 database of breached passwords at https://api.pwnedpasswords.com.
+                                                 If set to ``strict`` then if the site can't be reached, validation
+                                                 will fail. If set to ``best-effort`` failure to reach the site will continue
+                                                 with the rest of password validation. Default is ``None``.
+``SECURITY_PASSWORD_BREACHED_COUNT``             Passwords with counts greater than or equal to this value are considered breached.
+                                                 The default of 1 might be to burdensome for some applications.
 ``SECURITY_DEPRECATED_PASSWORD_SCHEMES``         List of password hash algorithms that are considered weak and
                                                  will be accepted, however on first use, will be re-hashed
                                                  to the current default ``SECURITY_PASSWORD_HASH``.
@@ -321,7 +331,7 @@ Feature Flags
                           login statistics. If set to ``True``, ensure your
                           models have the required fields/attributes
                           and make sure to commit changes after calling
-                          ``login_user``. Be sure to use `ProxyFix <http://flask.pocoo.org/docs/0.10/deploying/wsgi-standalone/#proxy-setups>`_ if you are using a proxy.
+                          ``login_user``. Be sure to use `ProxyFix <https://werkzeug.palletsprojects.com/en/0.16.x/middleware/proxy_fix/#x-forwarded-for-proxy-fix>`_ if you are using a proxy.
                           Defaults to ``False``
 ``SECURITY_PASSWORDLESS`` Specifies if Flask-Security should enable the
                           passwordless login feature. If set to ``True``, users
@@ -528,6 +538,8 @@ The default messages and error levels can be found in ``core.py``.
 * ``SECURITY_MSG_LOGIN_EMAIL_SENT``
 * ``SECURITY_MSG_LOGIN_EXPIRED``
 * ``SECURITY_MSG_PASSWORDLESS_LOGIN_SUCCESSFUL``
+* ``SECURITY_MSG_PASSWORD_BREACHED``
+* ``SECURITY_MSG_PASSWORD_BREACHED_SITE_ERROR``
 * ``SECURITY_MSG_PASSWORD_CHANGE``
 * ``SECURITY_MSG_PASSWORD_INVALID_LENGTH``
 * ``SECURITY_MSG_PASSWORD_IS_THE_SAME``
@@ -537,6 +549,7 @@ The default messages and error levels can be found in ``core.py``.
 * ``SECURITY_MSG_PASSWORD_RESET``
 * ``SECURITY_MSG_PASSWORD_RESET_EXPIRED``
 * ``SECURITY_MSG_PASSWORD_RESET_REQUEST``
+* ``SECURITY_MSG_PASSWORD_TOO_SIMPLE``
 * ``SECURITY_MSG_REFRESH``
 * ``SECURITY_MSG_RETYPE_PASSWORD_MISMATCH``
 * ``SECURITY_MSG_TWO_FACTOR_INVALID_TOKEN``

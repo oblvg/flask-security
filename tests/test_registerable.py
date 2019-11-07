@@ -11,7 +11,9 @@ import pytest
 from flask import Flask
 from utils import authenticate, logout
 
+from flask_security import Security
 from flask_security.core import UserMixin
+from flask_security.forms import ConfirmRegisterForm, StringField
 from flask_security.signals import user_registered
 
 pytestmark = pytest.mark.registerable()
@@ -34,7 +36,10 @@ def test_registerable_flag(client, app, get_message):
         recorded.append(user)
 
     data = dict(
-        email="dude@lp.com", password="password", password_confirm="password", next=""
+        email="dude@lp.com",
+        password="battery staple",
+        password_confirm="battery staple",
+        next="",
     )
     with app.mail.record_messages() as outbox:
         response = client.post("/register", data=data, follow_redirects=True)
@@ -46,7 +51,7 @@ def test_registerable_flag(client, app, get_message):
     logout(client)
 
     # Test user can login after registering
-    response = authenticate(client, email="dude@lp.com", password="password")
+    response = authenticate(client, email="dude@lp.com", password="battery staple")
     assert response.status_code == 302
 
     logout(client)
@@ -66,7 +71,7 @@ def test_registerable_flag(client, app, get_message):
     assert get_message("EMAIL_ALREADY_ASSOCIATED", email="Dude@lp.com") in response.data
 
     # Test registering with JSON
-    data = '{ "email": "dude2@lp.com", "password": "password"}'
+    data = '{ "email": "dude2@lp.com", "password": "horse battery"}'
     response = client.post(
         "/register", data=data, headers={"Content-Type": "application/json"}
     )
@@ -89,7 +94,10 @@ def test_registerable_flag(client, app, get_message):
 
     # Test ?next param
     data = dict(
-        email="dude3@lp.com", password="password", password_confirm="password", next=""
+        email="dude3@lp.com",
+        password="horse staple",
+        password_confirm="horse staple",
+        next="",
     )
 
     response = client.post("/register?next=/page1", data=data, follow_redirects=True)
@@ -104,7 +112,10 @@ def test_custom_register_url(client):
     assert b"<h1>Register</h1>" in response.data
 
     data = dict(
-        email="dude@lp.com", password="password", password_confirm="password", next=""
+        email="dude@lp.com",
+        password="battery staple",
+        password_confirm="battery staple",
+        next="",
     )
 
     response = client.post("/custom_register", data=data, follow_redirects=True)
@@ -159,4 +170,49 @@ def test_two_factor_json(app, client, get_message):
     assert response.status_code == 401
     assert response.jdata["response"]["error"].encode("utf-8") == get_message(
         "UNAUTHENTICATED"
+    )
+
+
+@pytest.mark.settings(password_complexity_checker="zxcvbn")
+def test_easy_password(app, sqlalchemy_datastore):
+    class MyRegisterForm(ConfirmRegisterForm):
+        username = StringField("Username")
+
+    app.config["SECURITY_CONFIRM_REGISTER_FORM"] = MyRegisterForm
+    security = Security(datastore=sqlalchemy_datastore)
+    security.init_app(app)
+
+    client = app.test_client()
+
+    # With zxcvbn
+    data = dict(
+        email="dude@lp.com",
+        username="dude",
+        password="mattmatt2",
+        password_confirm="mattmatt2",
+    )
+    response = client.post(
+        "/register", data=json.dumps(data), headers={"Content-Type": "application/json"}
+    )
+    assert response.headers["Content-Type"] == "application/json"
+    assert response.status_code == 400
+    # Response from zxcvbn
+    assert "Repeats like" in response.jdata["response"]["errors"]["password"][0]
+
+    # Test that username affects password selection
+    data = dict(
+        email="dude@lp.com",
+        username="Joe",
+        password="JoeTheDude",
+        password_confirm="JoeTheDude",
+    )
+    response = client.post(
+        "/register", data=json.dumps(data), headers={"Content-Type": "application/json"}
+    )
+    assert response.headers["Content-Type"] == "application/json"
+    assert response.status_code == 400
+    # Response from zxcvbn
+    assert (
+        "Password not complex enough"
+        in response.jdata["response"]["errors"]["password"][0]
     )

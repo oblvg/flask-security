@@ -263,8 +263,8 @@ def test_cp_with_token(app, client):
     # make sure returned csrf_token works in header.
     data = dict(
         password="password",
-        new_password="newpassword",
-        new_password_confirm="newpassword",
+        new_password="battery staple",
+        new_password_confirm="battery staple",
     )
 
     with mp_validate_csrf() as mp:
@@ -348,8 +348,8 @@ def test_different_mechanisms(app, client):
         # session based change password should fail
         data = dict(
             password="password",
-            new_password="newpassword",
-            new_password_confirm="newpassword",
+            new_password="battery staple",
+            new_password_confirm="battery staple",
         )
 
         response = client.post(
@@ -391,8 +391,8 @@ def test_different_mechanisms_nc(app, client_nc):
         # token based should work
         data = dict(
             password="password",
-            new_password="newpassword",
-            new_password_confirm="newpassword",
+            new_password="battery staple",
+            new_password_confirm="battery staple",
         )
         response = client_nc.post(
             "/change",
@@ -440,8 +440,8 @@ def test_cp_with_token_cookie(app, client):
     # make sure returned csrf_token works in header.
     data = dict(
         password="password",
-        new_password="newpassword",
-        new_password_confirm="newpassword",
+        new_password="battery staple",
+        new_password_confirm="battery staple",
     )
     csrf_token = [c.value for c in client.cookie_jar if c.name == "X-XSRF-Token"][0]
     with mp_validate_csrf() as mp:
@@ -475,8 +475,8 @@ def test_cp_with_token_cookie_expire(app, client):
     time.sleep(2)
     data = dict(
         password="password",
-        new_password="newpassword",
-        new_password_confirm="newpassword",
+        new_password="battery staple",
+        new_password_confirm="battery staple",
     )
     csrf_token = [c.value for c in client.cookie_jar if c.name == "X-XSRF-Token"][0]
     with mp_validate_csrf() as mp:
@@ -514,8 +514,8 @@ def test_cp_with_token_cookie_refresh(app, client):
     # make sure returned csrf_token works in header.
     data = dict(
         password="password",
-        new_password="newpassword",
-        new_password_confirm="newpassword",
+        new_password="battery staple",
+        new_password_confirm="battery staple",
     )
 
     csrf_cookie = [c for c in client.cookie_jar if c.name == "X-XSRF-Token"][0]

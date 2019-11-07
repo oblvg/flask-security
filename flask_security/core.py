@@ -51,6 +51,7 @@ from .utils import (
     FsPermNeed,
     csrf_cookie_handler,
     default_want_json,
+    default_password_validator,
     get_config,
     hash_data,
     localize_callback,
@@ -109,6 +110,10 @@ _default_config = {
     "PASSWORD_HASH_PASSLIB_OPTIONS": {
         "argon2__rounds": 10  # 1.7.1 default is 2.
     },  # >= 1.7.1 method to pass options.
+    "PASSWORD_LENGTH_MIN": 8,
+    "PASSWORD_COMPLEXITY_CHECKER": None,
+    "PASSWORD_CHECK_BREACHED": False,
+    "PASSWORD_BREACHED_COUNT": 1,
     "DEPRECATED_PASSWORD_SCHEMES": ["auto"],
     "LOGIN_URL": "/login",
     "LOGOUT_URL": "/logout",
@@ -277,7 +282,16 @@ _default_messages = {
     "INVALID_EMAIL_ADDRESS": (_("Invalid email address"), "error"),
     "PASSWORD_NOT_PROVIDED": (_("Password not provided"), "error"),
     "PASSWORD_NOT_SET": (_("No password is set for this user"), "error"),
-    "PASSWORD_INVALID_LENGTH": (_("Password must be at least 6 characters"), "error"),
+    "PASSWORD_INVALID_LENGTH": (
+        _("Password must be at least %(length)s characters"),
+        "error",
+    ),
+    "PASSWORD_TOO_SIMPLE": (_("Password not complex enough"), "error"),
+    "PASSWORD_BREACHED": (_("Password on breached list"), "error"),
+    "PASSWORD_BREACHED_SITE_ERROR": (
+        _("Failed to contact breached passwords site"),
+        "error",
+    ),
     "USER_DOES_NOT_EXIST": (_("Specified user does not exist"), "error"),
     "INVALID_PASSWORD": (_("Invalid password"), "error"),
     "PASSWORDLESS_LOGIN_SUCCESSFUL": (_("You have successfully logged in."), "success"),
@@ -506,6 +520,7 @@ def _get_state(app, datastore, anonymous_user=None, **kwargs):
             _want_json=default_want_json,
             _unauthn_handler=default_unauthn_handler,
             _unauthz_handler=default_unauthz_handler,
+            _password_validator=default_password_validator,
         )
     )
 
@@ -779,6 +794,9 @@ class _SecurityState(object):
     def unauthn_handler(self, cb):
         self._unauthn_handler = cb
 
+    def password_validator(self, cb):
+        self._password_validator = cb
+
 
 class Security(object):
     """The :class:`Security` class initializes the Flask-Security extension.
@@ -954,6 +972,8 @@ class Security(object):
         if cv("USE_VERIFY_PASSWORD_CACHE", app=app):
             self._check_modules("cachetools", "USE_VERIFY_PASSWORD_CACHE", True)
 
+        if cv("PASSWORD_COMPLEXITY_CHECKER", app=app) == "zxcvbn":
+            self._check_modules("zxcvbn", "PASSWORD_COMPLEXITY_CHECKER", True)
         return state
 
     def _check_modules(self, module, config_name, config_value):  # pragma: no cover
@@ -1077,6 +1097,27 @@ class Security(object):
         .. versionadded:: 3.3.0
         """
         self._state._unauthn_handler = cb
+
+    def password_validator(self, cb):
+        """
+        Callback for validating a user password.
+        This is called on registration as well a change and reset password.
+        For registration, kwargs will be all the form input fields that are attributes
+        of the user model.
+        For reset/change, kwargs will be user=UserModel
+
+        :param cb: Callback function with signature (password, is_register, kwargs)
+
+            :password: desired new plain text password
+            :is_register: True if called as part of initial registration
+            :kwargs: user info
+
+        Returns: None if password passes all validations. A list of (localized) messages
+        if not.
+
+        .. versionadded:: 3.4.0
+        """
+        self._state._password_validator = cb
 
     def __getattr__(self, name):
         return getattr(self._state, name, None)
