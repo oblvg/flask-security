@@ -61,6 +61,7 @@ from .signals import (
     tf_disabled,
     user_confirmed,
     user_registered,
+    bad_password,
 )
 from .totp import Totp
 from .utils import (

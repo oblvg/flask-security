@@ -31,6 +31,7 @@ from wtforms import (
 )
 
 from .confirmable import requires_confirmation
+from .signals import bad_password
 from .utils import (
     _,
     _datastore,
@@ -317,6 +318,7 @@ class LoginForm(Form, NextFormMixin):
             return False
         if not self.user.verify_and_update_password(self.password.data):
             self.password.errors.append(get_message("INVALID_PASSWORD")[0])
+            bad_password.send(current_app._get_current_object(), user=self.user)
             return False
         if requires_confirmation(self.user):
             self.email.errors.append(get_message("CONFIRMATION_REQUIRED")[0])
