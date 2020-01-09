@@ -352,7 +352,7 @@ def confirm_email(token):
 
     if expired or already_confirmed:
         if already_confirmed:
-            m, c = get_message("ALREADY_CONFIRMED")
+            m, c = get_message("ALREADY_CONFIRMED", email=user.email)
         else:
             send_confirmation_instructions(user)
             m, c = get_message(
